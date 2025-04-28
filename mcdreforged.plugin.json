@@ -2,10 +2,11 @@
     "id": "securercon",
     "version": "1.0.0",
     "name": "SecureRCON",
-    "description": "Encrypt your rcon",
+    "description": "Encrypt your RCON connection",
     "author": "wangyupu",
     "link": "https://github.com/wang-yupu/SecureRCON",
     "dependencies": {
-        "mcdreforged": ">=2.1.0"
+        "mcdreforged": ">=2.1.0",
+        "python": ">=3.10.0"
     }
 }
