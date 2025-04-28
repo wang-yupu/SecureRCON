@@ -1,0 +1,11 @@
+{
+    "id": "securercon",
+    "version": "1.0.0",
+    "name": "SecureRCON",
+    "description": "Encrypt your rcon",
+    "author": "wangyupu",
+    "link": "https://github.com/wang-yupu/SecureRCON",
+    "dependencies": {
+        "mcdreforged": ">=2.1.0"
+    }
+}
