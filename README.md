@@ -13,9 +13,11 @@
 
 ### SecureMCRCON Python Package
 
-> Coming soon
+> 执行 `pip install securemcrcon` 以安装，然后使用`smcrcon`命令
+> [Repo](https://github.com/wang-yupu/SecureMCRCON)  
+> [PyPI](https://pypi.org/project/securemcrcon/)  
 
-用CLI进行连接
+CLI客户端
 
 ### MCRCON App
 
