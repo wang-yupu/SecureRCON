@@ -9,10 +9,19 @@ import hashlib
 class AuthOptions:
     allowEncrypt = True
     allowLegacy = True
+    allowEncryptedLegeacy = True
     allowDynmaic = True
+    allowEncryptedDynmaic = True
     dynmaicKey: str | None = None
     dynmaicLength: int | None = None
     legacyPassword: str | None = None
+
+
+@dataclass
+class NetworkOptions:
+    maxConnection: int = 5
+    timeout: float = 2.5
+    bufsize: int = 2048
 
 
 @dataclass

@@ -1,11 +1,11 @@
 
 # SecureRCON
 
-一个MCDR插件，加密你的RCON访问
+一个MCDR插件，加密你的RCON访问，扩展RCON功能
 
 ## Why?
 
-原版的RCON是明文传输的（包括密钥与内容），因此加密RCON是有用的。
+原版的RCON是明文传输的（包括密钥与内容），因此加密RCON是有用的。扩展RCON后，可以执行MCDR指令和聊天。
 
 ## 加密方法和访问方法
 

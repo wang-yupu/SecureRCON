@@ -9,12 +9,12 @@ activeConnections = 0
 connectionLock = threading.Lock()
 
 
-def handleClient(clientSocket, clientAddress):
+def handleClient(clientSocket, clientAddress, logger):
     global activeConnections
     print(f"连接来自 {clientAddress}")
 
     try:
-        connection = ClientConnection(clientSocket, AuthOptions(legacyPassword="test"))
+        connection = ClientConnection(clientSocket, AuthOptions(legacyPassword="test"), NetworkOptions(), logger)
         connection.start()
     except ConnectionResetError:
         pass
@@ -27,12 +27,12 @@ def handleClient(clientSocket, clientAddress):
         print(f"断开连接 {clientAddress}，当前连接数：{activeConnections}")
 
 
-def startServer(host='0.0.0.0', port=8888):
+def startServer(logger, host='0.0.0.0', port=8888):
     global activeConnections
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serverSocket.bind((host, port))
     serverSocket.listen()
-    serverSocket.settimeout(1.0)  # ⭐ 设置1秒超时时间
+    serverSocket.settimeout(1.0)
     print(f"服务器监听在 {host}:{port}")
 
     try:
@@ -40,7 +40,7 @@ def startServer(host='0.0.0.0', port=8888):
             try:
                 clientSocket, clientAddress = serverSocket.accept()
             except socket.timeout:
-                continue  # 超时了，继续循环，顺便可以检测Ctrl+C
+                continue
             with connectionLock:
                 if activeConnections >= maxConnections:
                     print(f"拒绝连接 {clientAddress}，已达到最大连接数")
@@ -51,7 +51,7 @@ def startServer(host='0.0.0.0', port=8888):
 
             clientThread = threading.Thread(
                 target=handleClient,
-                args=(clientSocket, clientAddress),
+                args=(clientSocket, clientAddress, logger),
                 daemon=True,
                 name=f"RCONClientConnection-{activeConnections}"
             )

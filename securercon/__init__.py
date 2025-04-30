@@ -1,6 +1,8 @@
 #
 from mcdreforged.plugin.si.plugin_server_interface import PluginServerInterface
 from mcdreforged.api.decorator.new_thread import new_thread
+
+from securercon.encrypt import exchange
 from .server import startServer
 from . import shared
 from .utils.backendContext import readFromServerProperties
@@ -13,8 +15,9 @@ def on_load(server: PluginServerInterface, _):
 
     shared.rcon = readFromServerProperties(os.path.dirname(os.path.dirname(server.get_data_folder())))
 
+    shared.private, shared.public = exchange.newKeyPair()
     server.logger.info(f"Starting RCON Server threading...")
-    startServerOnNewThread()  # type: ignore
+    startServerOnNewThread(server.logger)  # type: ignore
 
 
 def on_unload(server: PluginServerInterface):
@@ -25,5 +28,5 @@ def on_unload(server: PluginServerInterface):
 
 
 @new_thread('SecureRCON')
-def startServerOnNewThread():
-    startServer()
+def startServerOnNewThread(logger):
+    startServer(logger)
