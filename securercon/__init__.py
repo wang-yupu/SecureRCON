@@ -1,6 +1,7 @@
 #
 from mcdreforged.plugin.si.plugin_server_interface import PluginServerInterface
 from mcdreforged.api.decorator.new_thread import new_thread
+from mcdreforged.info_reactor.info import Info
 
 from securercon.encrypt import exchange
 from .server import startServer
@@ -17,7 +18,7 @@ def on_load(server: PluginServerInterface, _):
 
     shared.private, shared.public = exchange.newKeyPair()
     server.logger.info(f"Starting RCON Server threading...")
-    startServerOnNewThread(server.logger)  # type: ignore
+    startServerOnNewThread(server)  # type: ignore
 
 
 def on_unload(server: PluginServerInterface):
@@ -27,6 +28,16 @@ def on_unload(server: PluginServerInterface):
         pass
 
 
-@new_thread('SecureRCON')
-def startServerOnNewThread(logger):
-    startServer(logger)
+def on_user_info(server: PluginServerInterface, info: Info):
+    if info.is_player:
+        for _, cb in shared.chatTriggers.items():
+            try:
+                cb(info.player, info.content)
+            except:
+                server.logger.warning("Failed to put something to chat queue.")
+
+
+@new_thread('SecureRCON-TCPServer')
+def startServerOnNewThread(server: PluginServerInterface):
+    startServer(server.logger, server.broadcast)
+    shared.stopped = True

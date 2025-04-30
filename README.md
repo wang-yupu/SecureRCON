@@ -11,7 +11,15 @@
 
 安装此插件后，如果机器的任意端口都暴露到网络，请使用防火墙进行拦截(e.g. ufw / firewalled / iptables)，同时设定一个较强的RCON密码。本插件会自动读取RCON密码，并监听一个端口(默认25575)，此端口的协议兼容原始RCON，若依然使用原版RCON客户端，可以使用固定强密码或者动态密码。
 
+### SecureMCRCON Python Package
+
+> Coming soon
+
+用CLI进行连接
+
 ### MCRCON App
 
-[GitHub](https://github.com/wang-yupu/)
-此应用支持Windows / macOS(Coming Soon) / Linux(Coming Soon) / Android，可以用此应用进行加密RCON连接，本身也是一个不错的RCON图形化客户端
+> Coming soon (第二优先级)
+
+<!-- [GitHub](https://github.com/wang-yupu/)
+此应用支持Windows / macOS(Coming Soon) / Linux(Coming Soon) / Android，可以用此应用进行加密RCON连接，本身也是一个不错的RCON图形化客户端 -->
