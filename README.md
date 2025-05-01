@@ -9,11 +9,11 @@
 
 ## 加密方法和访问方法
 
-安装此插件后，如果机器的任意端口都暴露到网络，请使用防火墙进行拦截(e.g. ufw / firewalled / iptables)，同时设定一个较强的RCON密码。本插件会自动读取RCON密码，并监听一个端口(默认25575)，此端口的协议兼容原始RCON，若依然使用原版RCON客户端，可以使用固定强密码或者动态密码。
+安装此插件后，如果机器的任意端口都暴露到网络，请使用防火墙进行拦截(e.g. ufw / firewalled / iptables)，同时设定一个较强的RCON密码。本插件会自动读取RCON密码，并监听一个端口(默认25576)，此端口的协议兼容原始RCON，若依然使用原版RCON客户端，可以使用固定强密码或者动态密码。
 
 ### SecureMCRCON Python Package
 
-> 执行 `pip install securemcrcon` 以安装，然后使用`smcrcon`命令
+> 执行 `pip install securemcrcon` 以安装，然后使用`smcrcon`命令  
 > [Repo](https://github.com/wang-yupu/SecureMCRCON)  
 > [PyPI](https://pypi.org/project/securemcrcon/)  
 
