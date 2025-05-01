@@ -1,6 +1,6 @@
 {
     "id": "securercon",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "name": "SecureRCON",
     "description": "Encrypt your RCON connection",
     "author": "wangyupu",
