@@ -13,9 +13,7 @@ def loadKeyPair(dirName: str) -> tuple[x25519.X25519PrivateKey, x25519.X25519Pub
     if filePath.exists():
         with open(filePath, 'r') as file:
             keypair = fromJSONString(file.read())
-        if keypair[0] and keypair[1]:
-            return keypair
-        return newKeyPair()
+        return keypair
     else:
         keypair = newKeyPair()
         with open(filePath, "w") as file:

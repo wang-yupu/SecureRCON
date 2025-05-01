@@ -49,6 +49,7 @@ class ClientConnection:
         self.inChat = False
         self.chatQueue = Queue(50)
         self.chatSender = chatSender
+        self.errorCount = 0
 
     def doAuth(self, packet: RCONPacket) -> tuple[bool, str, AuthMethod]:
         try:
@@ -137,25 +138,27 @@ class ClientConnection:
                     self.logger.warning("Peer timeout.")
                     return False, None
                 continue
+        if raw == b'':
+            return False, None
         if self.encrypted and not skipEncrypt:
             try:
+
                 r = ChaCha20Poly1305Decrypt(raw, self.encryptKey, None, self.packetID)
+                self.packetID += 1
                 p = rawToPacketClass(r)
             except InvalidTag:
                 self.logger.info(f"Maybe client out of sync.")
-                self.logger.info(f"ChaCha20Poly1305 Key: {self.encryptKey}")
+                self.logger.info(f"ChaCha20Poly1305 Key: {self.encryptKey.hex()}")
                 self.logger.info(f"Packet ID: {self.packetID}")
                 return False, None
-            self.packetID += 1
             return True, p
-        elif not self.encrypted:
+        else:
             try:
                 p = rawToPacketClass(raw)
             except:
                 return False, None
             self.packetID += 1
             return True, p
-        return False, None
 
     def start(self):
         breakReason = "unknown"
@@ -164,11 +167,14 @@ class ClientConnection:
             if packet is None:
                 self.logger.warning(f"[{self.packetID}] Failed to decode RCON data. ")
                 breakReason = 'failed to decode RCON data'
-                break
+                self.errorCount += 1
+                if self.errorCount >= 5:
+                    break
+                else:
+                    continue
             with self.progressLock:
                 match (packet.type):
                     case 3:  # AUTH
-                        self.packetID = 0
                         authResult, authMessage, method = self.doAuth(packet)
                         self.authMethod = method
                         if not authResult:

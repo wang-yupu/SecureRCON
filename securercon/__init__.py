@@ -33,7 +33,6 @@ def onLoad(server: PluginServerInterface):
         f"Using RCON config: {shared.rcon.host}:{shared.rcon.port} with password: {shared.rcon.password[:2]}{(len(shared.rcon.password)-4)*'*'}{shared.rcon.password[-2:]}")
     shared.private, shared.public = loadKeyPair(server.get_data_folder())
 
-    shared.private, shared.public = exchange.newKeyPair()
     server.logger.info(f"Starting RCON Server threading...")
     startServerOnNewThread(server)  # type: ignore
 
