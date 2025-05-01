@@ -7,14 +7,31 @@ from securercon.encrypt import exchange
 from .server import startServer
 from . import shared
 from .utils.backendContext import readFromServerProperties
+from .utils.configLoader import loadConfig
+from .encrypt.exchange import loadKeyPair
 import os.path
 
 
 def on_load(server: PluginServerInterface, _):
+    try:
+        onLoad(server)
+    except Exception as error:
+        server.logger.error(f"Failed to execute on_load event. Error: {error}")
+        shared.stopped = True
+
+
+def onLoad(server: PluginServerInterface):
     server.logger.info(
         f"SecureRCON v{server.get_plugin_metadata('securercon').version} was loaded")  # type: ignore
 
-    shared.rcon = readFromServerProperties(os.path.dirname(os.path.dirname(server.get_data_folder())))
+    # 加载配置
+    MCDRRoot = os.path.dirname(
+        os.path.dirname(server.get_data_folder()))
+    shared.rcon = readFromServerProperties(MCDRRoot, server.get_mcdr_config())
+    shared.config = loadConfig(os.path.join(MCDRRoot, "config/securercon/config.yaml"))
+    server.logger.info(
+        f"Using RCON config: {shared.rcon.host}:{shared.rcon.port} with password: {shared.rcon.password[:2]}{(len(shared.rcon.password)-4)*'*'}{shared.rcon.password[-2:]}")
+    shared.private, shared.public = loadKeyPair(server.get_data_folder())
 
     shared.private, shared.public = exchange.newKeyPair()
     server.logger.info(f"Starting RCON Server threading...")

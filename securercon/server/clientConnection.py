@@ -40,7 +40,7 @@ class ClientConnection:
         self.authSuccess = False
         self.encrypted = False
         self.encryptKey = b""
-        self.packedID = 0
+        self.packetID = 0
 
         self.authMethod: AuthMethod = AuthMethod.UNAUTHORIZATION
 
@@ -56,9 +56,8 @@ class ClientConnection:
         except UnicodeDecodeError:
             return False, 'Failed to decode password.', AuthMethod.UNAUTHORIZATION
 
-        if not self.encrypted:
+        if not self.encrypted:  # 未加密
             if self.authOptions.allowLegacy and self.authOptions.legacyPassword:
-                print("'", packet.payload, "'")
                 if self.authOptions.legacyPassword == pwd:
                     return True, 'Success login', AuthMethod.FIXED_PASSWORD
                 return False, 'Access with a fixed password and without encryption is not allowed.', AuthMethod.UNAUTHORIZATION
@@ -67,14 +66,13 @@ class ClientConnection:
                     return True, 'Success login', AuthMethod.DYNMAIC_PASSWORD
                 return False, 'Access with a dynmaic password and without encryption is not allowed.', AuthMethod.UNAUTHORIZATION
             return False, 'Access with a dynmaic or fixed password and without encryption is not allowed.', AuthMethod.UNAUTHORIZATION
-        elif self.encrypted:
-            if self.authOptions.allowEncryptedLegeacy and self.authOptions.legacyPassword:
-                print("'", packet.payload, "'")
+        elif self.encrypted:  # 加密
+            if self.authOptions.allowEncryptedLegacy and self.authOptions.legacyPassword:  # 加密 固定密码
                 if self.authOptions.legacyPassword == pwd:
                     return True, 'Success login', AuthMethod.ENCRYPTED_FIXED_PASSWORD
                 return False, 'Access with a fixed password is not allowed.', AuthMethod.UNAUTHORIZATION
             elif self.authOptions.allowEncryptedDynmaic and self.authOptions.dynmaicKey and self.authOptions.dynmaicLength:
-                if getPasswordNow(self.authOptions.dynmaicKey, self.authOptions.dynmaicLength) == pwd:
+                if getPasswordNow(self.authOptions.dynmaicKey, self.authOptions.dynmaicLength) == pwd:  # 加密 动态密码
                     return True, 'Success login', AuthMethod.ENCRYPTED_DYNMAIC_PASSWORD
                 return False, 'Access with a dynmaic password is not allowed.', AuthMethod.UNAUTHORIZATION
             return False, 'Access with a dynmaic or fixed password is not allowed.', AuthMethod.UNAUTHORIZATION
@@ -84,12 +82,8 @@ class ClientConnection:
         result = self.RCONClient.send_command(packet.payload.decode(encoding='utf-8'))
         return result if result else ""
 
-    def executeMCDRCommand(self, packet: RCONPacket):
-        print(f"EXECUTE COMMAND: {packet.payload}")
-        return "Result: MCDR command"
-
     def sendChat(self, packet: RCONPacket):
-        self.chatSender(f'[RCON] {packet.payload.decode(encoding='utf-8', errors='ignore')}')
+        self.chatSender(f'<RCON> {packet.payload.decode(encoding='utf-8', errors='ignore')}')
         self.logger.info(f"RCON Chat: {packet.payload.decode(encoding='utf-8', errors='ignore')}")
 
     def chatListener(self):
@@ -122,10 +116,10 @@ class ClientConnection:
             self.chatQueue = Queue(50)
 
     def send(self, packet: RCONPacket):
-        packet.id = self.packedID
+        packet.id = self.packetID
         d = packetClassToRaw(packet)
         if self.encrypted:
-            encryptedData = ChaCha20Poly1305Encrypt(d, self.encryptKey, None, self.packedID)
+            encryptedData = ChaCha20Poly1305Encrypt(d, self.encryptKey, None, self.packetID)
             with self.sendLock:
                 self.socket.send(encryptedData)
         else:
@@ -140,45 +134,47 @@ class ClientConnection:
                 break
             except TimeoutError:
                 if self.authMethod == AuthMethod.UNAUTHORIZATION:
-                    self.logger.warn("Peer timeout.")
+                    self.logger.warning("Peer timeout.")
                     return False, None
                 continue
         if self.encrypted and not skipEncrypt:
             try:
-                r = ChaCha20Poly1305Decrypt(raw, self.encryptKey, None, self.packedID)
+                r = ChaCha20Poly1305Decrypt(raw, self.encryptKey, None, self.packetID)
                 p = rawToPacketClass(r)
             except InvalidTag:
                 self.logger.info(f"Maybe client out of sync.")
                 self.logger.info(f"ChaCha20Poly1305 Key: {self.encryptKey}")
-                self.logger.info(f"Packet ID: {self.packedID}")
+                self.logger.info(f"Packet ID: {self.packetID}")
                 return False, None
-            self.packedID += 1
+            self.packetID += 1
             return True, p
         elif not self.encrypted:
             try:
                 p = rawToPacketClass(raw)
             except:
                 return False, None
-            self.packedID += 1
+            self.packetID += 1
             return True, p
         return False, None
 
     def start(self):
+        breakReason = "unknown"
         while True:
             res, packet = self.recv()
             if packet is None:
-                self.logger.warn("Failed to decode RCON data. ")
+                self.logger.warning(f"[{self.packetID}] Failed to decode RCON data. ")
+                breakReason = 'failed to decode RCON data'
                 break
             with self.progressLock:
                 match (packet.type):
                     case 3:  # AUTH
+                        self.packetID = 0
                         authResult, authMessage, method = self.doAuth(packet)
-                        print(authMessage)
                         self.authMethod = method
                         if not authResult:
-                            print("AUTH FAILED:", self.authMethod)
                             self.send(RCONPacket(
                                 0, -1, 2, authMessage.encode(encoding='utf-8')))
+                            breakReason = 'Authorization failed'
                             break
                         self.authSuccess = True
                         self.RCONClient.connect()
@@ -188,13 +184,10 @@ class ClientConnection:
                         if self.authSuccess and self.authMethod != AuthMethod.UNAUTHORIZATION and not self.inChat:
                             result = self.executeCommand(packet)
                             self.send(RCONPacket(0, packet.id, 0, result.encode('utf-8')))
-                    case 8:  # MCDR Command
-                        if self.authSuccess and self.authMethod != AuthMethod.UNAUTHORIZATION and not self.inChat:
-                            result = self.executeMCDRCommand(packet)
-                            self.send(RCONPacket(0, packet.id, 0, result.encode('utf-8')))
                     case 255:  # 开始加密流程
                         # 交换密钥，用X25519
                         if not (shared.public and shared.private):
+                            breakReason = 'No public and private key'
                             break
                         self.socket.send(packetClassToRaw(RCONPacket(0, packet.id, 255,
                                                                      exchange.toBase85(shared.public).encode(encoding='utf-8'))))
@@ -202,13 +195,14 @@ class ClientConnection:
                         try:
                             result = rawToPacketClass(self.socket.recv(2048))
                         except TimeoutError:
+                            breakReason = 'Exchange timeout'
                             break
                         self.encryptKey = exchange.exchange(shared.private, x25519.X25519PublicKey.from_public_bytes(
                             result.payload), None, b"INFO", 32)
 
                         self.encrypted = True
                         self.logger.info("Key exchange success.")
-                        self.packedID = 0
+                        self.packetID = 0
                     case 16:  # Chat start
                         if not self.inChat:
                             threading.Thread(name=f"RCONChatListener-{self.id}",
@@ -227,7 +221,9 @@ class ClientConnection:
                         self.send(RCONPacket(0, packet.id, 128, packet.payload))
                     case _:
                         self.logger.info("Client send a unknown packet. Maybe outdated server.")
-                        self.socket.close()
+                        breakReason = 'unknown packet'
+                        break
 
-        self.logger.info("Event loop was exited.")
+        self.logger.info(f"[{self.packetID}][{self.encrypted}] Event loop was exited. Reason: {breakReason}")
+        self.logger.info(f"Authorization status: {self.authMethod}")
         self.socket.close()

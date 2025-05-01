@@ -1,8 +1,12 @@
 #
 from .utils.backendContext import RCONConnectionConfig
 from cryptography.hazmat.primitives.asymmetric import x25519
-stop = False
-stopped = False
+from .utils.configLoader import Config
+
+config: Config = Config()
+
+stop: bool = False
+stopped: bool = False
 
 rcon: RCONConnectionConfig = RCONConnectionConfig('127.0.0.1', 25575, 'default')
 

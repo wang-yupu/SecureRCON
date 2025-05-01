@@ -7,11 +7,11 @@ import hashlib
 
 @dataclass
 class AuthOptions:
-    allowEncrypt = True
-    allowLegacy = True
-    allowEncryptedLegeacy = True
-    allowDynmaic = True
-    allowEncryptedDynmaic = True
+    allowEncrypt: bool = True
+    allowLegacy: bool = True
+    allowEncryptedLegacy: bool = True
+    allowDynmaic: bool = True
+    allowEncryptedDynmaic: bool = True
     dynmaicKey: str | None = None
     dynmaicLength: int | None = None
     legacyPassword: str | None = None

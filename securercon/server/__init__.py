@@ -4,17 +4,19 @@ from .internal import *
 from .clientConnection import ClientConnection
 from .. import shared
 
-maxConnections = 5
 activeConnections = 0
 connectionLock = threading.Lock()
 
 
-def handleClient(clientSocket, clientAddress, chatSender, logger):
+def handleClient(clientSocket, clientAddress, chatSender, logger, authConfig):
     global activeConnections
 
+    network = NetworkOptions(shared.config.network.maxConnection,
+                             shared.config.network.timeout, shared.config.network.bufsize)
+
     try:
-        connection = ClientConnection(clientSocket, AuthOptions(legacyPassword="test"),
-                                      NetworkOptions(), activeConnections, chatSender, logger)
+        connection = ClientConnection(clientSocket, authConfig,
+                                      network, activeConnections, chatSender, logger)
         connection.start()
     except ConnectionResetError:
         pass
@@ -27,13 +29,25 @@ def handleClient(clientSocket, clientAddress, chatSender, logger):
         logger.info(f"Disconnected from {clientAddress}")
 
 
-def startServer(logger, chatSender, host='0.0.0.0', port=8888):
+def startServer(logger, chatSender):
     global activeConnections
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    host = shared.config.network.host
+    port = shared.config.network.port
     serverSocket.bind((host, port))
     serverSocket.listen()
     serverSocket.settimeout(1.0)
-    logger.info("RCON Server started.")
+    logger.info(f"RCON Server started on {host}:{port}.")
+    authConfig = AuthOptions()
+    authConfig.allowDynmaic = shared.config.authorization.dynmaic.enable and not shared.config.authorization.dynmaic.requireEncrypt
+    authConfig.allowLegacy = shared.config.authorization.fixed.enable and not shared.config.authorization.fixed.requireEncrypt
+    authConfig.allowEncrypt = shared.config.authorization.enableEncrypt
+    authConfig.allowEncryptedDynmaic = shared.config.authorization.dynmaic.enable and authConfig.allowEncrypt
+    authConfig.allowEncryptedLegacy = shared.config.authorization.fixed.enable and authConfig.allowEncrypt
+    authConfig.dynmaicKey = shared.config.authorization.dynmaic.key
+    authConfig.dynmaicLength = shared.config.authorization.dynmaic.length
+    authConfig.legacyPassword = shared.config.authorization.fixed.password
+    logger.info(f"Authorization options: {authConfig}")
 
     try:
         while not shared.stop:
@@ -42,7 +56,7 @@ def startServer(logger, chatSender, host='0.0.0.0', port=8888):
             except socket.timeout:
                 continue
             with connectionLock:
-                if activeConnections >= maxConnections:
+                if activeConnections >= shared.config.network.maxConnection:
                     logger.warn("RCON Server busy.")
                     clientSocket.sendall(b"Server busy, try later")
                     clientSocket.close()
@@ -51,7 +65,7 @@ def startServer(logger, chatSender, host='0.0.0.0', port=8888):
 
             clientThread = threading.Thread(
                 target=handleClient,
-                args=(clientSocket, clientAddress, chatSender, logger),
+                args=(clientSocket, clientAddress, chatSender, logger, authConfig),
                 daemon=True,
                 name=f"RCONClientConnection-{activeConnections}"
             )

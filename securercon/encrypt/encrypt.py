@@ -1,5 +1,4 @@
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-import os
 import hashlib
 
 

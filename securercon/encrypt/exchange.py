@@ -1,15 +1,26 @@
 #
-from cryptography.hazmat.primitives.asymmetric import x25519
-from cryptography.hazmat.primitives import serialization
 import base64
 import json
-from cryptography.hazmat.primitives import hashes
+from pathlib import Path
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import x25519
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives import serialization
 
 
 def loadKeyPair(dirName: str) -> tuple[x25519.X25519PrivateKey, x25519.X25519PublicKey]:
-    ...
+    filePath = Path(dirName, 'serverkey')
+    if filePath.exists():
+        with open(filePath, 'r') as file:
+            keypair = fromJSONString(file.read())
+        if keypair[0] and keypair[1]:
+            return keypair
+        return newKeyPair()
+    else:
+        keypair = newKeyPair()
+        with open(filePath, "w") as file:
+            file.write(toJSONString(*keypair))
+        return keypair
 
 
 def newKeyPair() -> tuple[x25519.X25519PrivateKey, x25519.X25519PublicKey]:
@@ -49,7 +60,7 @@ def toJSONString(privateKey: x25519.X25519PrivateKey, publicKey: x25519.X25519Pu
     return json.dumps(data, ensure_ascii=False)
 
 
-def fromJSONString(data: str) -> tuple[x25519.X25519PrivateKey, x25519.X25519PublicKey] | None:
+def fromJSONString(data: str) -> tuple[x25519.X25519PrivateKey, x25519.X25519PublicKey]:
     try:
         obj = json.loads(data)
 
@@ -74,3 +85,12 @@ def exchange(private: x25519.X25519PrivateKey, peerPublic: x25519.X25519PublicKe
     ).derive(sharedKey)
 
     return key
+
+
+def publicToHash(public: x25519.X25519PublicKey) -> bytes:
+    hasher = hashes.Hash(hashes.SHA256())
+    hasher.update(public.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw
+    ))
+    return hasher.finalize()
