@@ -41,6 +41,7 @@ class Config(BaseModel):
     network: NetworkConfig = NetworkConfig()
     authorization: AuthorizationConfig = AuthorizationConfig()
     backend: BackendConfig = BackendConfig()
+    commandPermission: int = 4
 
 
 def loadConfig(filename: str) -> Config:

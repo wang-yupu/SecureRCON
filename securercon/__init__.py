@@ -9,6 +9,7 @@ from . import shared
 from .utils.backendContext import readFromServerProperties
 from .utils.configLoader import loadConfig
 from .encrypt.exchange import loadKeyPair
+from .command import registerAllCommands
 import os.path
 
 
@@ -32,6 +33,8 @@ def onLoad(server: PluginServerInterface):
     server.logger.info(
         f"Using RCON config: {shared.rcon.host}:{shared.rcon.port} with password: {shared.rcon.password[:2]}{(len(shared.rcon.password)-4)*'*'}{shared.rcon.password[-2:]}")
     shared.private, shared.public = loadKeyPair(server.get_data_folder())
+
+    registerAllCommands(server)
 
     server.logger.info(f"Starting RCON Server threading...")
     startServerOnNewThread(server)  # type: ignore
