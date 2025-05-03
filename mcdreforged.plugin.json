@@ -2,7 +2,10 @@
     "id": "securercon",
     "version": "1.0.1",
     "name": "SecureRCON",
-    "description": "Encrypt your RCON connection",
+    "description": {
+        "zh_cn": "加密你的RCON连接",
+        "en_us": "Encrypt your RCON connection"
+    },
     "author": "wangyupu",
     "link": "https://github.com/wang-yupu/SecureRCON",
     "dependencies": {
