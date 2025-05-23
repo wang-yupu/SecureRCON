@@ -1,6 +1,6 @@
 {
     "id": "securercon",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "name": "SecureRCON",
     "description": {
         "zh_cn": "加密你的RCON连接",
