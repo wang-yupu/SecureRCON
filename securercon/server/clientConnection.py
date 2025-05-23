@@ -84,7 +84,7 @@ class ClientConnection:
         return result if result else ""
 
     def sendChat(self, packet: RCONPacket):
-        self.chatSender(f'<RCON> {packet.payload.decode(encoding='utf-8', errors='ignore')}')
+        self.chatSender(f"<RCON> {packet.payload.decode(encoding='utf-8', errors='ignore')}")
         self.logger.info(f"RCON Chat: {packet.payload.decode(encoding='utf-8', errors='ignore')}")
 
     def chatListener(self):
